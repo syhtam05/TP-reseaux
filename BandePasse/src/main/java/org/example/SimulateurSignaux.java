@@ -100,26 +100,48 @@ public class SimulateurSignaux extends JFrame {
         }
 
         private void drawManchester(Graphics2D g, char bit, int x, int yH, int yL) {
-            if (bit == '0') { // Transition montante (Bas -> Haut)
-                g.drawLine(x, yL, x + STEP/2, yL);
-                g.drawLine(x + STEP/2, yL, x + STEP/2, yH);
-                g.drawLine(x + STEP/2, yH, x + STEP, yH);
-            } else { // Transition descendante (Haut -> Bas)
-                g.drawLine(x, yH, x + STEP/2, yH);
-                g.drawLine(x + STEP/2, yH, x + STEP/2, yL);
-                g.drawLine(x + STEP/2, yL, x + STEP, yL);
+            int startY = (bit == '0') ? yL : yH; // Niveau où le bit doit commencer
+            int midY = (bit == '0') ? yH : yL;   // Niveau après la transition du milieu
+
+            // 1. Transition verticale AU DÉBUT (si nécessaire pour rejoindre le bit précédent)
+            if (x > 50 && lastY != startY) {
+                g.drawLine(x, lastY, x, startY);
             }
+
+            // 2. Première moitié du bit
+            g.drawLine(x, startY, x + STEP / 2, startY);
+            
+            // 3. Transition SYMBOLIQUE au milieu (obligatoire en Manchester)
+            g.drawLine(x + STEP / 2, startY, x + STEP / 2, midY);
+            
+            // 4. Deuxième moitié du bit
+            g.drawLine(x + STEP / 2, midY, x + STEP, midY);
+
+            // On mémorise la fin pour le bit suivant
+            lastY = midY;
         }
 
         private void drawManchesterDiff(Graphics2D g, char bit, int x, int yH, int yL) {
-            // Si bit='0', transition au début du bit. Si '1', pas de transition au début.
-            // Il y a TOUJOURS une transition au milieu.
-            if (bit == '0') lastY = (lastY == yH) ? yL : yH;
+            // 1. Gestion de la transition au DÉBUT du bit
+            if (bit == '0') {
+                int oldY = lastY;
+                lastY = (lastY == yH) ? yL : yH; // Inversion de l'état
+                
+                // On trace la transition verticale au début (frontière entre bits)
+                if (x > 50) {
+                    g.drawLine(x, oldY, x, lastY);
+                }
+            }
 
+            // 2. Préparation de la transition au MILIEU (toujours présente)
             int midY = (lastY == yH) ? yL : yH;
-            g.drawLine(x, lastY, x + STEP/2, lastY); // 1ère moitié
-            g.drawLine(x + STEP/2, lastY, x + STEP/2, midY); // Milieu
-            g.drawLine(x + STEP/2, midY, x + STEP, midY); // 2ème moitié
+
+            // 3. Dessin des segments
+            g.drawLine(x, lastY, x + STEP / 2, lastY);       // 1ère moitié
+            g.drawLine(x + STEP / 2, lastY, x + STEP / 2, midY); // Transition milieu
+            g.drawLine(x + STEP / 2, midY, x + STEP, midY);   // 2ème moitié
+
+            // 4. Mise à jour de l'état final pour le prochain bit
             lastY = midY;
         }
 
